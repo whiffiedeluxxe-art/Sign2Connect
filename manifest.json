@@ -1,0 +1,14 @@
+{
+  "name": "Sign2Connect",
+  "short_name": "Sign2Connect",
+  "description": "Real-time sign language recognition that runs entirely in your browser.",
+  "start_url": "./sign2connect.html",
+  "display": "standalone",
+  "background_color": "#F7F9FB",
+  "theme_color": "#2F6F6B",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
