@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign2Connect</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2F6F6B">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F7F9FB;
+    --panel:#FFFFFF;
+    --ink:#1B2430;
+    --ink-soft:#5B6675;
+    --teal:#2F6F6B;
+    --teal-bright:#4FD1C5;
+    --amber:#E8A33D;
+    --line:#E1E7EA;
+    --danger:#C4573B;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.5;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  a{color:inherit;}
+
+  /* Header */
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:20px clamp(20px,5vw,56px);
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0; background:rgba(247,249,251,0.9); backdrop-filter:blur(8px);
+    z-index:50;
+  }
+  .logo{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:1.3rem; letter-spacing:-0.01em;
+    display:flex; align-items:center; gap:10px;
+  }
+  .logo-mark{
+    width:30px; height:30px; border-radius:8px;
+    overflow:hidden; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .logo-mark img{width:100%; height:100%; object-fit:cover; display:block;}
+  nav{display:flex; gap:32px; font-size:0.92rem; color:var(--ink-soft);}
+  nav a{text-decoration:none; transition:color .15s;}
+  nav a:hover{color:var(--teal);}
+
+  /* Hero */
+  .hero{
+    padding:64px clamp(20px,5vw,56px) 24px;
+    max-width:1200px; margin:0 auto;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:0.78rem; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--teal); margin-bottom:14px; display:block;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(2.1rem, 5vw, 3.4rem);
+    font-weight:700; letter-spacing:-0.02em; max-width:780px;
+    margin-bottom:18px;
+  }
+  .hero p{
+    max-width:560px; color:var(--ink-soft); font-size:1.05rem; margin-bottom:28px;
+  }
+  .btn{
+    font-family:'Inter',sans-serif; font-weight:600; font-size:0.95rem;
+    padding:13px 26px; border-radius:10px; border:none; cursor:pointer;
+    transition:transform .12s ease, box-shadow .12s ease; display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn:focus-visible{outline:3px solid var(--amber); outline-offset:2px;}
+  .btn-primary{background:var(--teal); color:white;}
+  .btn-primary:hover{transform:translateY(-1px); box-shadow:0 6px 18px rgba(47,111,107,0.28);}
+  .btn-primary:disabled{background:#9FB4B2; cursor:not-allowed; transform:none; box-shadow:none;}
+  .btn-ghost{background:transparent; color:var(--ink); border:1px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--teal); color:var(--teal);}
+
+  /* Main studio layout */
+  .studio{
+    display:grid; grid-template-columns:1.4fr 1fr; gap:24px;
+    max-width:1200px; margin:24px auto 0; padding:0 clamp(20px,5vw,56px) 40px;
+  }
+  @media (max-width:860px){ .studio{grid-template-columns:1fr;} }
+
+  .panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    overflow:hidden;
+  }
+
+  /* Camera panel */
+  .camera-panel{position:relative;}
+  .camera-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; border-bottom:1px solid var(--line);
+  }
+  .camera-head h2{font-family:'Space Grotesk',sans-serif; font-size:1.05rem;}
+  .status-pill{
+    display:flex; align-items:center; gap:7px; font-family:'JetBrains Mono',monospace;
+    font-size:0.75rem; color:var(--ink-soft); padding:5px 10px; border-radius:20px; background:var(--bg);
+  }
+  .status-dot{width:8px; height:8px; border-radius:50%; background:#B9C2C9; transition:background .2s;}
+  .status-dot.live{background:var(--teal-bright); box-shadow:0 0 0 4px rgba(79,209,197,0.25);}
+  .status-dot.detecting{background:var(--amber); box-shadow:0 0 0 4px rgba(232,163,61,0.25);}
+
+  .video-wrap{
+    position:relative; aspect-ratio:4/3; background:#0F1720;
+    display:flex; align-items:center; justify-content:center;
+  }
+  video, canvas{
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    transform:scaleX(-1); /* mirror */
+    object-fit:cover;
+  }
+  .empty-state{
+    color:#9AA7B2; text-align:center; padding:20px; max-width:280px; z-index:2;
+  }
+  .empty-state svg{margin-bottom:14px; opacity:0.8;}
+  .empty-state p{font-size:0.9rem; margin-bottom:18px; color:#C3CBD2;}
+
+  .controls-bar{
+    display:flex; flex-wrap:wrap; gap:10px; padding:16px 20px; border-top:1px solid var(--line);
+  }
+
+  /* Output panel */
+  .output-panel{display:flex; flex-direction:column;}
+  .output-head{
+    padding:16px 20px; border-bottom:1px solid var(--line);
+    font-family:'Space Grotesk',sans-serif; font-size:1.05rem;
+  }
+  .recognized{
+    flex:1; padding:28px 20px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px;
+    min-height:180px;
+  }
+  .recognized .word{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:2.2rem; color:var(--teal);
+    min-height:2.6rem;
+  }
+  .recognized .hint{color:var(--ink-soft); font-size:0.85rem;}
+  .speak-btn{margin-top:4px;}
+
+  .transcript{
+    border-top:1px solid var(--line); padding:16px 20px; max-height:220px; overflow-y:auto;
+  }
+  .transcript h3{font-size:0.8rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); margin-bottom:10px; font-family:'JetBrains Mono',monospace; font-weight:500;}
+  .transcript ul{list-style:none;}
+  .transcript li{
+    display:flex; justify-content:space-between; padding:7px 0; font-size:0.92rem;
+    border-bottom:1px dashed var(--line);
+  }
+  .transcript li:last-child{border-bottom:none;}
+  .transcript time{color:var(--ink-soft); font-family:'JetBrains Mono',monospace; font-size:0.75rem;}
+  .transcript-empty{color:var(--ink-soft); font-size:0.85rem;}
+
+  /* How it works */
+  .how{
+    max-width:1200px; margin:0 auto; padding:20px clamp(20px,5vw,56px) 70px;
+  }
+  .how h2{font-family:'Space Grotesk',sans-serif; font-size:1.6rem; margin-bottom:28px;}
+  .glossary{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px;
+  }
+  .sign-card{
+    border:1px solid var(--line); border-radius:12px; padding:16px; background:var(--panel);
+  }
+  .sign-card .shape{font-size:1.6rem; margin-bottom:8px;}
+  .sign-card .name{font-weight:600; font-size:0.95rem; margin-bottom:2px;}
+  .sign-card .desc{font-size:0.8rem; color:var(--ink-soft);}
+
+  footer{
+    border-top:1px solid var(--line); padding:26px clamp(20px,5vw,56px);
+    display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; color:var(--ink-soft); font-size:0.82rem;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+
+  /* Alphabet guide modal */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(15,23,32,0.72);
+    display:none; align-items:center; justify-content:center;
+    padding:24px; z-index:200;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-card{
+    background:var(--panel); border-radius:18px; max-width:480px; width:100%;
+    max-height:90vh; overflow-y:auto; position:relative;
+    box-shadow:0 24px 60px rgba(15,23,32,0.35);
+  }
+  .modal-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; border-bottom:1px solid var(--line);
+    position:sticky; top:0; background:var(--panel);
+  }
+  .modal-head h3{font-family:'Space Grotesk',sans-serif; font-size:1.05rem;}
+  .modal-close{
+    width:34px; height:34px; border-radius:9px; border:none; background:var(--ink);
+    color:white; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .modal-close:hover{background:var(--teal);}
+  .modal-card img{display:block; width:100%; height:auto;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="logo-mark"><img src="logo.png" alt="Sign2Connect logo"></span>Sign2Connect</div>
+  <nav>
+    <a href="#studio">Studio</a>
+    <a href="#" id="navGuideLink">Alphabet guide</a>
+    <a href="#how">How it works</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <span class="eyebrow">Real-time · Runs in your browser</span>
+  <h1>Turn hand signs into words, out loud.</h1>
+  <p>Sign2Connect watches your hands through your camera and reads out what you sign — bridging the gap between sign and spoken language, right where you're standing.</p>
+  <button class="btn btn-primary" id="heroStart">Start the camera</button>
+</section>
+
+<section class="studio" id="studio">
+  <!-- Camera panel -->
+  <div class="panel camera-panel">
+    <div class="camera-head">
+      <h2>Camera</h2>
+      <div class="status-pill"><span class="status-dot" id="statusDot"></span><span id="statusText">Off</span></div>
+    </div>
+    <div class="video-wrap" id="videoWrap">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="overlay"></canvas>
+      <div class="empty-state" id="emptyState">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#5B6675" stroke-width="1.4"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        <p>Your camera feed will appear here. We only process it locally — nothing is uploaded.</p>
+        <button class="btn btn-primary" id="allowBtn">Allow camera</button>
+      </div>
+    </div>
+    <div class="controls-bar">
+      <button class="btn btn-ghost" id="stopBtn" disabled>Stop camera</button>
+      <button class="btn btn-ghost" id="clearBtn">Clear transcript</button>
+      <button class="btn btn-ghost" id="flipBtn" disabled>Switch camera</button>
+      <button class="btn btn-ghost" id="guideBtn">📖 ASL guide</button>
+    </div>
+  </div>
+
+  <!-- Output panel -->
+  <div class="panel output-panel">
+    <div class="output-head">Recognized sign</div>
+    <div class="recognized">
+      <div class="word mono" id="wordOut">—</div>
+      <div class="hint" id="hintOut">Start the camera and show a sign to begin.</div>
+      <button class="btn btn-ghost speak-btn" id="speakBtn" disabled>🔊 Speak it</button>
+    </div>
+    <div class="transcript">
+      <h3>Transcript</h3>
+      <ul id="transcriptList"></ul>
+      <p class="transcript-empty" id="transcriptEmpty">Nothing recognized yet.</p>
+    </div>
+  </div>
+</section>
+
+<section class="how" id="how">
+  <h2>ASL alphabet (all 26 letters)</h2>
+  <div class="glossary" id="glossary"></div>
+  <p style="margin-top:22px; color:var(--ink-soft); font-size:0.88rem; max-width:640px;">
+    This demo uses MediaPipe Hands to track 21 hand landmarks live, then applies geometric rules to guess each letter. J and Z are traced motions, so they're recognized from the fingertip's short path over time rather than a single frame. Everything else is a held handshape. Because this is geometry, not a trained model, accuracy varies: letters with a distinct silhouette (B, C, L, O, V, Y...) are the most reliable, while the closed-fist cluster (A, E, M, N, S, T) and orientation-dependent letters (G, H, P, Q) are more likely to get mixed up — hold your hand steady, facing the camera, for the best results.
+  </p>
+  <script>
+    document.getElementById('glossary').innerHTML =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(l =>
+        `<div class="sign-card"><div class="name">${l}</div></div>`
+      ).join('');
+  </script>
+</section>
+
+<footer>
+  <span>Sign2Connect — processed locally in your browser. Video is never uploaded or stored.</span>
+  <span>Built with MediaPipe Hands</span>
+</footer>
+
+<div class="modal-overlay" id="guideOverlay">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>ASL alphabet — quick reference</h3>
+      <button class="modal-close" id="guideCloseBtn" aria-label="Close guide">✕</button>
+    </div>
+    <img src="asl-alphabet-chart.jpg" alt="Reference chart showing the handshape for every letter of the ASL manual alphabet, A through Z">
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script>
+const video = document.getElementById('video');
+const overlay = document.getElementById('overlay');
+const ctx = overlay.getContext('2d');
+const emptyState = document.getElementById('emptyState');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const wordOut = document.getElementById('wordOut');
+const hintOut = document.getElementById('hintOut');
+const speakBtn = document.getElementById('speakBtn');
+const stopBtn = document.getElementById('stopBtn');
+const clearBtn = document.getElementById('clearBtn');
+const heroStart = document.getElementById('heroStart');
+const allowBtn = document.getElementById('allowBtn');
+const transcriptList = document.getElementById('transcriptList');
+const transcriptEmpty = document.getElementById('transcriptEmpty');
+
+let stream = null;
+let camera = null;
+let handsModel = null;
+let lastSign = null;
+let lastSpokenWord = "";
+let stableCount = 0;
+
+// J and Z are traced, not held, so they're tracked as short motion trails
+// of a fingertip rather than a single static handshape.
+let indexTrail = []; // pointing-index path, watched for Z's zigzag
+let pinkyTrail = []; // "I" handshape pinky path, watched for J's hook
+const TRAIL_MAX_POINTS = 24;
+const TRAIL_WINDOW_MS = 900;
+
+function pushTrail(trail, point){
+  const now = performance.now();
+  trail.push({x: point.x, y: point.y, t: now});
+  while(trail.length && now - trail[0].t > TRAIL_WINDOW_MS) trail.shift();
+  if(trail.length > TRAIL_MAX_POINTS) trail.shift();
+}
+
+// Z: three strokes that reverse horizontal direction at least twice.
+function detectZigzag(trail, minFlips=2, minMove=0.015){
+  if(trail.length < 6) return false;
+  let flips = 0, lastDir = 0;
+  for(let i=1;i<trail.length;i++){
+    const dxs = trail[i].x - trail[i-1].x;
+    if(Math.abs(dxs) < minMove) continue;
+    const d = dxs > 0 ? 1 : -1;
+    if(lastDir !== 0 && d !== lastDir) flips++;
+    lastDir = d;
+  }
+  return flips >= minFlips;
+}
+
+// J: a downward stroke that curls into a sideways hook (a sharp turn in direction).
+function detectHook(trail, minMove=0.02){
+  if(trail.length < 6) return false;
+  const first = trail[0], mid = trail[Math.floor(trail.length/2)], last = trail[trail.length-1];
+  const v1 = {x: mid.x-first.x, y: mid.y-first.y};
+  const v2 = {x: last.x-mid.x, y: last.y-mid.y};
+  const len1 = Math.hypot(v1.x,v1.y), len2 = Math.hypot(v2.x,v2.y);
+  if(len1 < minMove || len2 < minMove) return false;
+  const dot = (v1.x*v2.x + v1.y*v2.y)/(len1*len2);
+  const angle = Math.acos(Math.max(-1, Math.min(1, dot))) * 180/Math.PI;
+  return angle > 40;
+}
+
+function setStatus(state){
+  statusDot.className = 'status-dot' + (state === 'live' ? ' live' : state === 'detecting' ? ' detecting' : '');
+  statusText.textContent = state === 'live' ? 'Watching' : state === 'detecting' ? 'Detecting sign' : 'Off';
+}
+
+function resizeCanvas(){
+  overlay.width = video.videoWidth || video.clientWidth;
+  overlay.height = video.videoHeight || video.clientHeight;
+}
+
+function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+
+// Rule-based classifier over MediaPipe's 21 landmarks.
+// Attempts all 26 ASL alphabet letters using hand geometry (finger extension,
+// thumb position, pointing direction, and landmark depth/z where useful).
+// Two important honesty notes about a geometry-only approach like this:
+//   1. J and Z are motion letters (traced, not held) — they're recognized
+//      separately in onResults() by watching the fingertip's path over time,
+//      not by classify() below.
+//   2. Several letters are inherently hard to tell apart from a single frame
+//      of 21 points: the closed-fist cluster (A, E, M, N, S, T) differs only
+//      by small thumb-position shifts, and G/H/P/Q depend on the hand being
+//      rotated a specific way relative to the camera. Expect more mix-ups in
+//      this group than with letters that have a distinct silhouette (B, C, L, Y...).
+function getFingerStates(landmarks){
+  const wrist = landmarks[0];
+  const ext = (tip,pip) => dist(tip,wrist) > dist(pip,wrist) * 1.05;
+  return {
+    index: ext(landmarks[8], landmarks[6]),
+    middle: ext(landmarks[12], landmarks[10]),
+    ring: ext(landmarks[16], landmarks[14]),
+    pinky: ext(landmarks[20], landmarks[18]),
+  };
+}
+
+function classify(landmarks, states){
+  const wrist = landmarks[0];
+  const thumbTip=landmarks[4];
+  const indexTip=landmarks[8], indexPip=landmarks[6], indexMcp=landmarks[5];
+  const middleTip=landmarks[12], middlePip=landmarks[10], middleMcp=landmarks[9];
+  const ringTip=landmarks[16], ringMcp=landmarks[13];
+  const pinkyTip=landmarks[20], pinkyMcp=landmarks[17];
+
+  const {index, middle, ring, pinky} = states;
+  const palmWidth = dist(indexMcp, pinkyMcp) || 0.001;
+
+  const thumbSpread = dist(thumbTip, pinkyMcp) / palmWidth;      // thumb stuck out to the side
+  const thumbTucked = dist(thumbTip, ringMcp) / palmWidth < 0.55; // thumb folded across palm
+  const thumbUp = thumbTip.y < indexMcp.y - 0.02;                 // thumb pointing upward
+  const thumbNearIndexTip = dist(thumbTip, indexTip) / palmWidth < 0.35;
+  const thumbNearMiddle = dist(thumbTip, middlePip ?? middleMcp) / palmWidth < 0.4;
+  const indexMiddleGap = dist(indexTip, middleTip) / palmWidth;
+
+  const allCurled = !index && !middle && !ring && !pinky;
+  const allExtended = index && middle && ring && pinky;
+
+  // Which way an extended finger is pointing, in image-plane terms.
+  const dir = (tip, mcp) => {
+    const dx = tip.x - mcp.x, dy = tip.y - mcp.y;
+    if(Math.abs(dy) > Math.abs(dx) * 1.2) return dy < 0 ? 'up' : 'down';
+    if(Math.abs(dx) > Math.abs(dy) * 1.2) return 'side';
+    return 'diag';
+  };
+  const indexDir = dir(indexTip, indexMcp);
+
+  // Index and middle swapped left/right order between base and tip = crossed fingers (R).
+  const crossed = (indexMcp.x < middleMcp.x) !== (indexTip.x < middleTip.x);
+
+  // Base knuckle raised but tip curled back past the pip = a hooked finger (X).
+  const indexHooked =
+    dist(indexPip, wrist) > dist(indexMcp, wrist) * 1.03 &&
+    dist(indexTip, wrist) < dist(indexPip, wrist) * 0.98 &&
+    !middle && !ring && !pinky;
+
+  // Where the thumb tip sits along the index->pinky knuckle line (0=index side, 1=pinky side).
+  // Used to tell M / N / T apart — they differ mainly in how far across the folded
+  // fingers the thumb is tucked.
+  const axisX = pinkyMcp.x - indexMcp.x, axisY = pinkyMcp.y - indexMcp.y;
+  const axisLenSq = (axisX*axisX + axisY*axisY) || 0.0001;
+  let thumbAcross = ((thumbTip.x-indexMcp.x)*axisX + (thumbTip.y-indexMcp.y)*axisY) / axisLenSq;
+  thumbAcross = Math.max(0, Math.min(1, thumbAcross));
+
+  // Thumb sitting in front of (closer to camera than) the curled fingertips
+  // usually means it's wrapped over the fist (S) rather than tucked under it (M/N/T).
+  const avgFingerZ = (indexTip.z + middleTip.z + ringTip.z + pinkyTip.z) / 4;
+  const thumbInFront = thumbTip.z < avgFingerZ - 0.01;
+
+  // --- Sideways / downward-pointing letters (hand rotated toward/away from camera) ---
+  if(index && !middle && !ring && !pinky && indexDir === 'side' && thumbSpread > 0.5) return "G";
+  if(index && middle && !ring && !pinky && indexDir === 'side' && indexMiddleGap <= 0.35 && thumbTucked) return "H";
+  if(index && !middle && !ring && !pinky && indexDir === 'down' && thumbSpread > 0.5) return "Q";
+  if(index && middle && !ring && !pinky && indexDir === 'down' && thumbNearMiddle) return "P";
+
+  // --- Crossed / hooked fingers ---
+  if(index && middle && !ring && !pinky && crossed) return "R";
+  if(indexHooked && thumbTucked) return "X";
+
+  // --- Upright single / double finger letters ---
+  if(pinky && !index && !middle && !ring && thumbTucked) return "I";
+  if(pinky && thumbUp && !index && !middle && !ring) return "Y";
+  if(index && !middle && !ring && !pinky && thumbUp) return "L";
+  if(index && !middle && !ring && !pinky && thumbNearIndexTip) return "D";
+  if(index && middle && !ring && !pinky && thumbNearMiddle && indexMiddleGap > 0.3) return "K";
+  if(index && middle && !ring && !pinky && indexMiddleGap > 0.35) return "V";
+  if(index && middle && !ring && !pinky && indexMiddleGap <= 0.35) return "U";
+  if(index && middle && ring && !pinky) return "W";
+  if(allExtended && thumbTucked) return "B";
+  if(thumbNearIndexTip && !index && middle && ring && pinky) return "F";
+
+  // --- Curved shapes ---
+  if(allCurled && thumbNearIndexTip) return "O";
+  const curveRatio = dist(indexTip, wrist) / (dist(indexMcp, wrist) || 0.0001);
+  if(!allCurled && !allExtended && curveRatio > 0.9 && curveRatio < 1.3 &&
+     dist(thumbTip, indexTip)/palmWidth > 0.3 && dist(thumbTip, indexTip)/palmWidth < 0.7) return "C";
+
+  // --- Closed-fist cluster: thumb position is the only thing that separates these ---
+  if(allCurled && thumbTucked && dist(thumbTip, middleMcp)/palmWidth < 0.4) return "E";
+  if(allCurled && thumbSpread > 0.75 && !thumbTucked) return "A";
+  if(allCurled && thumbTucked){
+    if(thumbInFront) return "S";
+    if(thumbAcross < 0.33) return "T";
+    if(thumbAcross < 0.66) return "N";
+    return "M";
+  }
+
+  return null;
+}
+
+function addToTranscript(word){
+  transcriptEmpty.style.display = 'none';
+  const li = document.createElement('li');
+  const t = document.createElement('time');
+  t.textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  const label = document.createElement('span');
+  label.textContent = word;
+  li.appendChild(label); li.appendChild(t);
+  transcriptList.prepend(li);
+}
+
+function speak(word){
+  if(!('speechSynthesis' in window)) return;
+  const utter = new SpeechSynthesisUtterance(word);
+  utter.rate = 0.95;
+  window.speechSynthesis.speak(utter);
+}
+
+function onResults(results){
+  resizeCanvas();
+  ctx.save();
+  ctx.clearRect(0,0,overlay.width, overlay.height);
+
+  if(results.multiHandLandmarks && results.multiHandLandmarks.length > 0){
+    setStatus('detecting');
+    for(const landmarks of results.multiHandLandmarks){
+      drawHand(landmarks);
+      const states = getFingerStates(landmarks);
+      let sign = classify(landmarks, states);
+      let motionTriggered = false;
+
+      // Track fingertip paths for the two motion letters.
+      const indexOnly = states.index && !states.middle && !states.ring && !states.pinky;
+      const iShape = states.pinky && !states.index && !states.middle && !states.ring;
+      if(indexOnly) pushTrail(indexTrail, landmarks[8]); else indexTrail.length = 0;
+      if(iShape) pushTrail(pinkyTrail, landmarks[20]); else pinkyTrail.length = 0;
+
+      if(indexOnly && detectZigzag(indexTrail)){
+        sign = "Z"; motionTriggered = true; indexTrail.length = 0;
+      } else if(iShape && detectHook(pinkyTrail)){
+        sign = "J"; motionTriggered = true; pinkyTrail.length = 0;
+      }
+
+      if(sign){
+        if(motionTriggered){
+          // The motion itself is the confirmation — no need to also hold it still.
+          lastSign = sign;
+          stableCount = 6;
+        } else if(sign === lastSign){
+          stableCount++;
+        } else {
+          lastSign = sign;
+          stableCount = 1;
+        }
+        if(stableCount === 6){ // held steady for ~6 frames (or just confirmed by motion)
+          wordOut.textContent = sign;
+          hintOut.textContent = "Recognized just now";
+          speakBtn.disabled = false;
+          if(sign !== lastSpokenWord){
+            addToTranscript(sign);
+            lastSpokenWord = sign;
+          }
+        }
+      }
+    }
+  } else {
+    setStatus('live');
+    lastSign = null; stableCount = 0;
+    indexTrail.length = 0; pinkyTrail.length = 0;
+  }
+  ctx.restore();
+}
+
+const HAND_CONNECTIONS = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],[0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]];
+
+function drawHand(landmarks){
+  const w = overlay.width, h = overlay.height;
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = '#4FD1C5';
+  ctx.beginPath();
+  for(const [a,b] of HAND_CONNECTIONS){
+    ctx.moveTo(landmarks[a].x*w, landmarks[a].y*h);
+    ctx.lineTo(landmarks[b].x*w, landmarks[b].y*h);
+  }
+  ctx.stroke();
+  ctx.fillStyle = '#E8A33D';
+  for(const lm of landmarks){
+    ctx.beginPath();
+    ctx.arc(lm.x*w, lm.y*h, 3.2, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+async function startCamera(){
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+    video.srcObject = stream;
+    await video.play();
+    emptyState.style.display = 'none';
+    stopBtn.disabled = false;
+    flipBtn.disabled = false;
+    setStatus('live');
+
+    if(!handsModel){
+      handsModel = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+      handsModel.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.6 });
+      handsModel.onResults(onResults);
+    }
+
+    camera = new Camera(video, {
+      onFrame: async () => { await handsModel.send({ image: video }); },
+      width: 640, height: 480
+    });
+    camera.start();
+  } catch(err){
+    hintOut.textContent = "Camera access was denied or unavailable.";
+    emptyState.querySelector('p').textContent = "We couldn't access your camera. Check your browser permissions and try again.";
+  }
+}
+
+function stopCamera(){
+  if(camera) camera.stop();
+  if(stream) stream.getTracks().forEach(t => t.stop());
+  stream = null;
+  ctx.clearRect(0,0,overlay.width, overlay.height);
+  emptyState.style.display = 'flex';
+  emptyState.style.flexDirection = 'column';
+  emptyState.style.alignItems = 'center';
+  stopBtn.disabled = true;
+  flipBtn.disabled = true;
+  setStatus('off');
+  wordOut.textContent = '—';
+  hintOut.textContent = 'Start the camera and show a sign to begin.';
+  speakBtn.disabled = true;
+}
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(err => console.log('SW registration failed', err));
+  });
+}
+
+heroStart.addEventListener('click', startCamera);
+allowBtn.addEventListener('click', startCamera);
+stopBtn.addEventListener('click', stopCamera);
+clearBtn.addEventListener('click', () => {
+  transcriptList.innerHTML = '';
+  transcriptEmpty.style.display = 'block';
+});
+speakBtn.addEventListener('click', () => speak(wordOut.textContent));
+const flipBtn = document.getElementById('flipBtn');
+
+// Alphabet guide modal
+const guideOverlay = document.getElementById('guideOverlay');
+const guideBtn = document.getElementById('guideBtn');
+const navGuideLink = document.getElementById('navGuideLink');
+const guideCloseBtn = document.getElementById('guideCloseBtn');
+
+function openGuide(){ guideOverlay.classList.add('open'); }
+function closeGuide(){ guideOverlay.classList.remove('open'); }
+
+guideBtn.addEventListener('click', openGuide);
+navGuideLink.addEventListener('click', (e) => { e.preventDefault(); openGuide(); });
+guideCloseBtn.addEventListener('click', closeGuide);
+guideOverlay.addEventListener('click', (e) => { if(e.target === guideOverlay) closeGuide(); });
+document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeGuide(); });
+</script>
+</body>
+</html>
