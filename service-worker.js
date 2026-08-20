@@ -1,18 +1,19 @@
-const CACHE_NAME = 'sign2connect-v1';
-const FILES_TO_CACHE = [
-  './sign2connect.html',
+const CACHE_NAME = 'sign2connect-v5';
+const APP_SHELL = [
+  './',
+  './index.html',
   './manifest.json',
-  'https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js',
-  'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js'
+  './logo.png',
+  './icon-192.png',
+  './icon-512.png',
+  './asl-alphabet-chart.jpg'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(FILES_TO_CACHE).catch(() => {
-        // If a CDN file fails to pre-cache (e.g. offline install), don't block install
-      });
-    })
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(APP_SHELL))
+      .catch((err) => console.warn('Pre-cache skipped:', err))
   );
   self.skipWaiting();
 });
@@ -27,19 +28,28 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+
+  // Don't intercept MediaPipe/CDN requests; let the browser fetch them normally.
+  if (url.origin !== self.location.origin) return;
+
+  // Network-first keeps GitHub Pages updates fresh; cache is only a fallback.
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          // Cache new same-origin or CDN files as we go, so the next offline load has them too
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => cached);
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(async () => {
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+        if (event.request.mode === 'navigate') return caches.match('./index.html');
+        throw new Error('Offline and resource not cached');
+      })
   );
 });
